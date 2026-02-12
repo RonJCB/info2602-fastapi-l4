@@ -41,6 +41,12 @@ def list_todos():
                 todo.get_cat_list()])
         print(tabulate(data, headers=["Text", "Done", "User", "Categories"]))
 
-
+@cli.command()
+def get_todo_by_userid(user_id:int):
+    with get_cli_session() as db:
+        todos = db.exec(select(Todo).where(Todo.user_id == user_id)).all()
+        print("Listing all users todos")
+        for todo in todos:
+            print(todo)
 if __name__ == "__main__":
     cli()

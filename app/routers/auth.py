@@ -7,6 +7,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated
 from fastapi import status
 
+
 auth_router = APIRouter(tags=["Authentication"])
 
 @auth_router.post("/token")
@@ -14,7 +15,7 @@ async def login_for_access_token(
    form_data :Annotated[OAuth2PasswordRequestForm,Depends()],
    db :SessionDep 
 )-> Token:
-    user = db.exec(select(RegularUser).where(User.username == form_data.username)).one_or_none()
+    user = db.exec(select(RegularUser).where(RegularUser.username == form_data.username)).one_or_none()
     if not user or not verify_password(plaintext_password = form_data.password, encrypted_password = user.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -25,11 +26,10 @@ async def login_for_access_token(
 
     return Token(access_token = access_token, token_type ="bearer")
 
-@auth_router.get("/identify", response_model= UserResponse)
+@auth_router.get("/identify", response_model=UserResponse)
 def get_user_by_id(db: SessionDep, user:AuthDep):
     return user
-
-@auth_router.post("signup", response_model = UserResponse, 
+@auth_router.post("/signup", response_model = UserResponse, 
                   status_code = status.HTTP_201_CREATED)
 def signup_user(user_data: UserCreate, db:SessionDep):
     try:

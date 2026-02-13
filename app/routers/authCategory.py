@@ -30,13 +30,21 @@ async def create_category(db:SessionDep, user:AuthDep, cat: Category):
 #Assigns the category cat_id to the todo todo_id if the user is authorized to access it
 @catUser_router.post("/todo/{todo_id}/category/{cat_id}", response_model = TodoCategory)
 async def add_category(db:SessionDep, user:AuthDep, category:Category):
-         todo = db.exec(select(Todo).where(Todo.user_id == user.id, Todo.categories.category_id == category.id )).one_or_none()
+         todo = db.exec(select(Todo).where(Todo.user_id == user.id )).one_or_none()
          if todo:#if find dthaat todo with category id assignment
               raise HTTPException(
                    status_code = status.HTTP_404_UNAUTHORIZED,
                    details = "Todo with that category Id already found in database"
                    
               )
+         cat = db.exec(select(Category).where(Category.id == category.id)).one_or_none()
+         if cat:
+               raise HTTPException(
+                     status_code = status.HTTP_404_NOT_FOUND,
+                     details = "Category already found in database",
+               )
+    
+        
          #create that todocategory listing if not there
          new_Category = TodoCategory(
             category_id = category.id
@@ -45,6 +53,7 @@ async def add_category(db:SessionDep, user:AuthDep, category:Category):
          
          db.add(new_Category)
          db.commit()#add to db
+         db.refresh(new_Category)
          return new_Category
 
 @catUser_router.delete("/todo/{todo_id}/category/{cat_id}")

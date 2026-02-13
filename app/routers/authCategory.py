@@ -2,12 +2,12 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import select
 from app.database import SessionDep
 from app.models import *
-from app.auth import encrypt_password, verify_password, create_access_token, AuthDep
-from fastapi.security import OAuth2PasswordRequestForm
-from typing import Annotated
+from app.auth import AuthDep
+#from fastapi.security import OAuth2PasswordRequestForm
+#from typing import Annotated
 from fastapi import status
 
-catUser_router = APIRouter("tags = [CategoryManagement]")
+catUser_router = APIRouter(tags = ["CategoryManagement"])
 #Exercise2
 #Creates a category for the CURRENT LOGGED IN user
 @catUser_router.post("/category", response_model= Category)

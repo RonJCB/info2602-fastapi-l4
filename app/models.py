@@ -5,7 +5,7 @@ from pydantic import EmailStr   #insert at top of the file
 class Token(SQLModel):
     access_token: str
     token_type: str
-
+#can pass a response model to give back to the client
 class UserResponse(SQLModel):
     id: Optional[int]
     username:str
@@ -31,15 +31,15 @@ class RegularUser(User, table=True):
     todos: list['Todo'] = Relationship(back_populates="user")
 class TodoCreate(SQLModel):
     text:str
-class CategoryItem(SQLModel, table = True):
-    id : int
-    text: str
+#class CategoryItem(SQLModel, table = True):
+ #   id : int
+  #  text: str
 
 class TodoResponse(SQLModel):
     id: Optional[int] = Field(primary_key = True, default = None)
     text:str
     done: bool = False
-    category: list["CategoryItem"]
+   # category: list["CategoryItem"]
 
 class TodoUpdate(SQLModel):
     text: Optional[str] = None

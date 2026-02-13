@@ -1,13 +1,13 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException,Depends
 from sqlmodel import select
 from app.database import SessionDep
 from app.models import *
-from app.auth import encrypt_password, verify_password, create_access_token, AuthDep
-from fastapi.security import OAuth2PasswordRequestForm
-from typing import Annotated
+from app.auth import  AuthDep
+#from fastapi.security import OAuth2PasswordRequestForm
+#from typing import Annotated
 from fastapi import status
 
-regUser_router = APIRouter("tags = [Authentication]")
+regUser_router = APIRouter(tags = ["RegularUser"])
 
 #Exercise1 updating response datamodel for todos route so it returns a list of 
 #category items whereby a single cat item should show the Id of the category and the

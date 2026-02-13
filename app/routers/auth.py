@@ -22,7 +22,7 @@ async def login_for_access_token(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )#error validation
-    access_token = create_access_token(data ={"sub":user.id, "role": user.role},)
+    access_token = create_access_token(data ={"sub":f"{user.id}", "role": f"{user.role}"})
 
     return Token(access_token = access_token, token_type ="bearer")
 

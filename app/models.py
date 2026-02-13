@@ -31,11 +31,15 @@ class RegularUser(User, table=True):
     todos: list['Todo'] = Relationship(back_populates="user")
 class TodoCreate(SQLModel):
     text:str
+class CategoryItem(SQLModel, table = True):
+    id : int
+    text: str
 
 class TodoResponse(SQLModel):
     id: Optional[int] = Field(primary_key = True, default = None)
     text:str
     done: bool = False
+    category: list["CategoryItem"]
 
 class TodoUpdate(SQLModel):
     text: Optional[str] = None

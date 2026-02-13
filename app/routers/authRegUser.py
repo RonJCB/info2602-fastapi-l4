@@ -24,7 +24,7 @@ def get_Todos(db: SessionDep, user:AuthDep):
         )#error validation
     return todos
 
-@regUser_router.get("/todo{id}", response_model = UserResponse)
+@regUser_router.get("/todo{id}", response_model = TodoResponse)
 def get_todo_byid(id:int ,db: SessionDep , user:AuthDep):
     todo = db.exec(select(Todo).where(Todo.id == id , Todo.user_id == user.id)).one_or_none()
 
@@ -66,6 +66,7 @@ async def update_todo(db:SessionDep, user:AuthDep, todoState: TodoUpdate):
     try:
         db.add(todo)
         db.commit()
+        #db.refresh(todo)
         return todo
     except Exception:
         raise HTTPException(

@@ -14,8 +14,8 @@ regUser_router = APIRouter(tags = ["RegularUser"])
 #category text
 @regUser_router.get("/todos",response_model=list[TodoResponse])
 def get_Todos(db: SessionDep, user:AuthDep):
-    todos = db.exec(select(RegularUser).where(RegularUser.todos.user_id == user.id)).all()
-
+    todos = db.exec(select(Todo)).all()
+    
     if not todos:
         raise HTTPException(
          status_code=status.HTTP_404_UNAUTHORIZED,
@@ -27,7 +27,7 @@ def get_Todos(db: SessionDep, user:AuthDep):
 @regUser_router.get("/todo{id}", response_model = TodoResponse)
 def get_todo_byid(id:int ,db: SessionDep , user:AuthDep):
     todo = db.exec(select(Todo).where(Todo.id == id , Todo.user_id == user.id)).one_or_none()
-
+    
     if not todo:
         raise HTTPException(
              status_code=status.HTTP_401_UNAUTHORIZED,
@@ -51,24 +51,26 @@ async def create_todo(db:SessionDep, user:AuthDep, todo: TodoCreate):
 
 @regUser_router.put("/todo{id}", response_model = TodoResponse)
 async def update_todo(db:SessionDep, user:AuthDep, todoState: TodoUpdate):
-    todo = db.exec(select(Todo).where(Todo.id == user.todos.id)).one_or_none()
+    todo = db.exec(select(Todo).where(Todo.id == todoState.id)).one_or_none()
 
     if not todo:
         raise HTTPException(
-              status_code = status.HTTP_405_METHOD_NOT_ALLOWED,
+              status_code = status.HTTP_422_UNPROCESSABLE_CONTENT,
          detail = "Cannot updateTodo in database",
          headers = {"WindowsError"} , 
         )
-    if (todoState.text):
+    if (todoState.text is not None):
         todo.text = todoState.text
     elif(todoState.done is not None):
         todo.done = todoState.done
     try:
+        
         db.add(todo)
         db.commit()
-        #db.refresh(todo)
+        db.refresh(todo)
         return todo
     except Exception:
+        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="An error occurred while updating an item",
@@ -76,7 +78,7 @@ async def update_todo(db:SessionDep, user:AuthDep, todoState: TodoUpdate):
 @regUser_router.delete("/todo/{id}")
 async def delete_todo(id:int ,db:SessionDep , user:AuthDep):
     todo = db.exec(select(Todo).where(Todo.user_id == user.id, Todo.id == id)).one_or_none()
-    if not todo:
+    if not todo:#user already authenticated so no point in checking if userId is true
         raise HTTPException(
          status_code = status.HTTP_405_METHOD_NOT_ALLOWED,
          detail = "Cannot delete Todo in database",
@@ -87,6 +89,7 @@ async def delete_todo(id:int ,db:SessionDep , user:AuthDep):
         db.delete(todo)
         db.commit()
     except Exception:
+        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="An error occurred while deleting an item",

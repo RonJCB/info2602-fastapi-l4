@@ -42,6 +42,7 @@ class TodoResponse(SQLModel):
    # category: list["CategoryItem"]
 
 class TodoUpdate(SQLModel):
+    id:int
     text: Optional[str] = None
     done: Optional[bool] = None
 

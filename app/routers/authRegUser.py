@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException,Depends
+from fastapi import APIRouter, HTTPException
 from sqlmodel import select
 from app.database import SessionDep
 from app.models import *
@@ -61,7 +61,7 @@ async def update_todo(db:SessionDep, user:AuthDep, todoState: TodoUpdate):
         )
     if (todoState.text):
         todo.text = todoState.text
-    elif(todoState.done):
+    elif(todoState.done is not None):
         todo.done = todoState.done
     try:
         db.add(todo)

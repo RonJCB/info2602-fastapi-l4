@@ -10,7 +10,7 @@ from fastapi import status
 catUser_router = APIRouter(tags = ["CategoryManagement"])
 #Exercise2
 #Creates a category for the CURRENT LOGGED IN user
-@catUser_router.post("/category", response_model= Category)
+@catUser_router.post("/category", response_model= CategoryResponse)
 async def create_category(db:SessionDep, user:AuthDep, cat: Category):
     new_Category = Category(text = cat.text, 
                                 id = cat.id , user_id =user.id )
@@ -23,25 +23,31 @@ async def create_category(db:SessionDep, user:AuthDep, cat: Category):
     except Exception:
         raise HTTPException(
             status_code = status.HTTP_401_UNAUTHORIZED,
-            details = "Not authorized to create category listing",
+            detail = "Not authorized to create category listing",
         )
 
 #add a category reponse model to see changes on client
 #Assigns the category cat_id to the todo todo_id if the user is authorized to access it
 @catUser_router.post("/todo/{todo_id}/category/{cat_id}", response_model = TodoCategory)
-async def add_category(db:SessionDep, user:AuthDep, category_id:int, todo_id:int):
+#must utilize the TodoCategory which maps the relationship to a user todo and a user Category
+async def add_category(todoCat: TodoCategory, db:SessionDep, user:AuthDep, category_id:int, todo_id:int):
          todo = db.exec(select(Todo).where(Todo.id == todo_id)).one_or_none()
-         if todo:#if find dthaat todo with category id assignment
+         if not todo:#if find dthaat todo with category id assignment
               raise HTTPException(
-                   status_code = status.HTTP_404_UNAUTHORIZED,
-                   details = "Todo with that category Id already found in database"
-                   
+                   status_code = status.HTTP_404_NOT_FOUND,
+                   detail = "Todo with that category Id not  found in database",
+           #based on the category and the level of urgency for example
+           # you can assign a todo to that todoCategory
+           #Category table should mainly be used to classify the type of complexity
+           #and or urgency of each todo class
+           # for example category id 203 and 202 have urgent class so
+           # their todo category will be mapped to the same todo category        
               )
          cat = db.exec(select(Category).where(Category.id == category_id)).one_or_none()
-         if cat:
+         if not cat:
                raise HTTPException(
                      status_code = status.HTTP_404_NOT_FOUND,
-                     details = "Category already found in database",
+                     detail = "Category not found in database",
                )
     
         
@@ -49,8 +55,11 @@ async def add_category(db:SessionDep, user:AuthDep, category_id:int, todo_id:int
          new_Category = TodoCategory(
             category_id = category_id
             ,todo_id = todo_id
+
         )
-         
+         todoCat.category_id = cat.id
+         todoCat.todo_id = todo.id
+         #todo.category.append(new_Category) 
          db.add(new_Category)
          db.commit()#add to db
          db.refresh(new_Category)
@@ -62,33 +71,38 @@ def delete_Category(db:SessionDep, user:AuthDep, cat_id:int, todo_id:int):
              if not todo:
                 raise HTTPException(
                         status_code= status.HTTP_404_NOT_FOUND,
-                        details ="Todo with that category assignment not found in db",
+                        detail ="Todo with that category assignment not found in db",
                 )
              category = db.exec(select(Category).where(Category.id == cat_id)).one_or_none()
              if not category:
                    raise HTTPException(
                          status_code= status.HTTP_404_NOT_FOUND,
-                        details ="Todo with that category assignment not found in db",   
+                        detail ="Todo with that category assignment not found in db",   
                    )
-             todoCat = db.exec(select(TodoCategory).where(TodoCategory.todo_id == todo_id
-                                                          , TodoCategory.category_id == cat_id))
-             db.delete(todoCat)
-             db.commit()
-
-@catUser_router.get("/category/{cat_id}/todos")
+             todoCat = db.exec(select(TodoCategory).where(TodoCategory.todo_id == todo.id)).one_or_none()
+             try:
+                 db.delete(todoCat)
+                 db.commit()
+             except Exception:
+                  db.rollback()
+                  raise HTTPException(
+                        status_code = status.HTTP_403_FORBIDDEN,
+                        detail = "Error occurredd while trying to delete user"
+                  )
+@catUser_router.get("/category/{cat_id}/todos", response_model = list[TodoResponse])
 async def get_Todos(db:SessionDep, user:AuthDep, cat_id:int):
-            getTodoByCategory = db.exec(select(Category).where(Category.user_id == user.id, Category.id == cat_id)).all()
+            getTodoByCategory = db.exec(select(Category).where(Category.id == cat_id)).one_or_none()
             if not getTodoByCategory:
                   raise HTTPException(
                         status_code = status.HTTP_404_NOT_FOUND,
-                        details = "Todos Categories by that ID not found in db",
+                        detail = "Todos Categories by that ID not found in db",
                   )
-            getTodos = db.exec(select(Todo).where(Todo.user_id == user.id, getTodoByCategory.id == cat_id)).all()
-
-            if not getTodos:
+            getTodoCat = db.exec(select(TodoCategory).where(TodoCategory.category_id == getTodoByCategory.id)).all()
+            getAllTodos = db.exec(select(Todo).where(Todo.id == getTodoCat.todo_id)).all()
+            if not getAllTodos:
                 raise HTTPException(
                         status_code= status.HTTP_404_NOT_FOUND,
-                        details ="Todos not found in db",
+                        detail ="Todos not found in db",
                 )
            
-            return getTodos
+            return getAllTodos
